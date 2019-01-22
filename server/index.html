@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>ChatBot</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.5.22/dist/vue.js"></script>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+
+<body>
+  <div id="app">
+    <div id="chat">
+      <template v-for="message in conversation">
+        <span>{{message}}</span><br />
+      </template>
+    </div>
+    <input type="text" v-model="message">
+    <button v-on:click="sendMessage()">Send</button>
+  </div>
+
+  <script>
+    const app = new Vue({
+      el: '#app',
+      data: {
+        conversation: [],
+        message: '',
+        speaker: new SpeechSynthesisUtterance(),
+        speakerVoices: null
+      },
+      methods: {
+        sendMessage: function () {
+          this.conversation.push('user> ' + this.message);
+          let message = this.message;
+          this.message = '';
+          axios.get('/api/?q=' + message)
+            .then((response) => {
+              this.conversation.push('bot> ' + response.data.message);
+              this.talk(response.data);
+            }).catch(function (error) {
+              console.log(error);
+            })
+        },
+        talk: function (data) {
+          this.speaker.voice = (data.locale === 'es') ? this.speakerVoices[6] : this.speakerVoices[3];
+          this.speaker.lang = (data.locale === 'es') ? 'es-ES' : 'en-US';
+          this.speaker.voiceURI = 'native';
+          this.speaker.volume = 1; // 0 to 1
+          this.speaker.rate = 0.9; // 0.1 to 10
+          this.speaker.pitch = 0; //0 to 2
+          this.speaker.text = data.message;
+          // speechSynthesis.speak(this.speaker);
+          console.log(this.speaker);
+        }
+      },
+      mounted() {
+        window.speechSynthesis.onvoiceschanged = () => {
+          this.speakerVoices = window.speechSynthesis.getVoices();
+        }
+      }
+    })
+  </script>
+</body>
+
+</html>
